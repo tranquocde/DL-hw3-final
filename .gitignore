@@ -1,0 +1,6 @@
+/train/
+/train_gt/
+/test_pred/
+/test_overlappred/
+/checkpoints/
+/test/
