@@ -29,7 +29,7 @@ class BottleNeck(nn.Module):
         return self.bridge(x)
 
 
-class UpsampleBlock(nn.Module):
+class DecBlock(nn.Module):
 
     def __init__(self, in_channels, out_channels, up_conv_in_channels=None, up_conv_out_channels=None,
                  ):
@@ -53,7 +53,7 @@ class UpsampleBlock(nn.Module):
 
 
 class Resnet152Unet(nn.Module):
-    DEPTH = 6
+    # DEPTH = 6
 
     def __init__(self, n_classes=2):
         super().__init__()
@@ -75,34 +75,39 @@ class Resnet152Unet(nn.Module):
         
         self.bottleneck = BottleNeck(2048, 2048)
 
-        dec_blocks = []
-        dec_blocks.append(UpsampleBlock(2048, 1024))
-        dec_blocks.append(UpsampleBlock(1024, 512))
-        dec_blocks.append(UpsampleBlock(512, 256))
-        dec_blocks.append(UpsampleBlock(in_channels=128 + 64, out_channels=128, up_conv_in_channels=256, up_conv_out_channels=128))
-        dec_blocks.append(UpsampleBlock(in_channels=64 + 3, out_channels=64, up_conv_in_channels=128, up_conv_out_channels=64))
+        dec_blocks = [
+            DecBlock(2048, 1024),
+            DecBlock(1024, 512),
+            DecBlock(512, 256),
+            DecBlock(in_channels=128 + 64, out_channels=128, up_conv_in_channels=256, up_conv_out_channels=128),
+            DecBlock(in_channels=64 + 3, out_channels=64, up_conv_in_channels=128, up_conv_out_channels=64)
+        ]
+
         self.dec_blocks = nn.ModuleList(dec_blocks)
 
         self.out = nn.Conv2d(64, n_classes, kernel_size=1, stride=1)
 
     def forward(self, x):
-        pre_pools = dict() # to save skip-connection
-        pre_pools["layer_0"] = x
+        pre_skip = dict() # to save skip-connection
+
+        pre_skip["layer0"] = x
         x = self.input_block(x) # (-1,64,112,112)
-        pre_pools["layer_1"] = x
+        pre_skip["layer1"] = x
         x = self.input_pool(x) #-1,64,56,56
 
         for i, block in enumerate(self.enc_blocks, 2):
             x = block(x)
-            if i == (Resnet152Unet.DEPTH - 1):
+            if i == 5 :
                 continue
-            pre_pools[f"layer_{i}"] = x # save the skip-connection
+            pre_skip[f"layer{i}"] = x # save the skip-connection
 
         x = self.bottleneck(x) #(-1,2048,224,224)
 
         for i, block in enumerate(self.dec_blocks, 1):
-            key = f"layer_{Resnet152Unet.DEPTH - 1 - i}"
-            x = block(x, pre_pools[key]) # decode with x and saved skip-connection
+
+            key = f"layer{5 - i}"
+            x = block(x, pre_skip[key]) # decode with x and saved skip-connection
+
         x = self.out(x)
-        del pre_pools
+        del pre_skip
         return x
