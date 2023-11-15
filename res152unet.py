@@ -53,8 +53,6 @@ class DecBlock(nn.Module):
 
 
 class Resnet152Unet(nn.Module):
-    # DEPTH = 6
-
     def __init__(self, n_classes=2):
         super().__init__()
         resnet = resnet152(weights=ResNet152_Weights.DEFAULT)
