@@ -22,7 +22,7 @@ val_transform = A.Compose([
 ])
 import argparse
 parser = argparse.ArgumentParser(description='Polyp inference')
-parser.add_argument('--path', type=str, default='checkpoints/saved_model_submission-2.pth',
+parser.add_argument('--path', type=str, default='checkpoints/saved_model_submission.pth',
                     help='model path')
 
 args = parser.parse_args()
