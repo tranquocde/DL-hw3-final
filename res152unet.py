@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from torchvision.models import resnet50, ResNet50_Weights
+from torchvision.models import resnet152, ResNet152_Weights
 
 
 class ConvBlock(nn.Module):
@@ -20,13 +20,13 @@ class ConvBlock(nn.Module):
 class BottleNeck(nn.Module):
     def __init__(self, in_channels, out_channels):
         super().__init__()
-        self.bottleneck = nn.Sequential(
+        self.bridge = nn.Sequential(
             ConvBlock(in_channels, out_channels),
             ConvBlock(out_channels, out_channels)
         )
 
     def forward(self, x):
-        return self.bottleneck(x)
+        return self.bridge(x)
 
 
 class UpsampleBlock(nn.Module):
@@ -52,15 +52,14 @@ class UpsampleBlock(nn.Module):
         return x
 
 
-class ResnetUnet(nn.Module):
+class Resnet152Unet(nn.Module):
     DEPTH = 6
 
     def __init__(self, n_classes=2):
         super().__init__()
-        resnet = resnet50(weights=ResNet50_Weights.DEFAULT)
-
+        resnet = resnet152(weights=ResNet152_Weights.DEFAULT)
+        blocks = list(resnet.children())
         enc_blocks = []
-
         self.input_block= nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=(7, 7), stride=(2, 2), padding=(3, 3), bias=False),
             nn.BatchNorm2d(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True),
@@ -69,7 +68,7 @@ class ResnetUnet(nn.Module):
 
         self.input_pool = nn.MaxPool2d(kernel_size=3, stride=2, padding=1, dilation=1, ceil_mode=False)
         
-        for enc in list(resnet.children()):
+        for enc in list(blocks):
             if isinstance(enc, nn.Sequential):
                 enc_blocks.append(enc)
         self.enc_blocks = nn.ModuleList(enc_blocks)
@@ -95,14 +94,14 @@ class ResnetUnet(nn.Module):
 
         for i, block in enumerate(self.enc_blocks, 2):
             x = block(x)
-            if i == (ResnetUnet.DEPTH - 1):
+            if i == (Resnet152Unet.DEPTH - 1):
                 continue
             pre_pools[f"layer_{i}"] = x # save the skip-connection
 
         x = self.bottleneck(x) #(-1,2048,224,224)
 
         for i, block in enumerate(self.dec_blocks, 1):
-            key = f"layer_{ResnetUnet.DEPTH - 1 - i}"
+            key = f"layer_{Resnet152Unet.DEPTH - 1 - i}"
             x = block(x, pre_pools[key]) # decode with x and saved skip-connection
         x = self.out(x)
         del pre_pools

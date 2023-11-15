@@ -1,7 +1,7 @@
 import torch
 import os 
 import cv2
-from resunet import Resnet50Unet
+from res152unet import Resnet152Unet
 import numpy as np
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
@@ -21,14 +21,14 @@ val_transform = A.Compose([
     ToTensorV2(),
 ])
 import argparse
-parser = argparse.ArgumentParser(description='NeoPolyp Inference')
-parser.add_argument('--path', type=str, default='model.pth',
+parser = argparse.ArgumentParser(description='Polyp inference')
+parser.add_argument('--path', type=str, default='checkpoints/saved_model_submission-2.pth',
                     help='model path')
 
 args = parser.parse_args()
 
 
-model = Resnet50Unet(n_classes=3)
+model = Resnet152Unet(n_classes=3)
 checkpoint = torch.load(args.path,map_location='cpu')
 model.load_state_dict(checkpoint['model'])
 
@@ -58,10 +58,10 @@ except OSError as error:
 
 
 model.eval()
-for i in os.listdir("/kaggle/input/bkai-igh-neopolyp/test/test"): #on kaggle
-# for i in os.listdir("test"):
-    img_path = os.path.join("/kaggle/input/bkai-igh-neopolyp/test/test", i) #on kaggle
-    # img_path = os.path.join("test", i)
+# for i in os.listdir("/kaggle/input/bkai-igh-neopolyp/test/test"): #on kaggle
+for i in os.listdir("test"):
+    # img_path = os.path.join("/kaggle/input/bkai-igh-neopolyp/test/test", i) #on kaggle
+    img_path = os.path.join("test", i)
     ori_img = cv2.imread(img_path)
     ori_img = cv2.cvtColor(ori_img, cv2.COLOR_BGR2RGB)
     ori_w = ori_img.shape[0]
