@@ -6,6 +6,14 @@ import numpy as np
 import albumentations as A
 from albumentations.pytorch.transforms import ToTensorV2
 import pandas as pd
+import argparse
+
+parser = argparse.ArgumentParser(description='Polyp inference')
+parser.add_argument('--path', type=str, default='checkpoints/saved_model_submission-2.pth',
+                    help='model path')
+
+args = parser.parse_args()
+
 color_dict= {0: (0, 0, 0),
              1: (255, 0, 0),
              2: (0, 255, 0)}
@@ -20,12 +28,6 @@ val_transform = A.Compose([
     A.Normalize(mean=(0.485, 0.456, 0.406),std=(0.229, 0.224, 0.225)),
     ToTensorV2(),
 ])
-import argparse
-parser = argparse.ArgumentParser(description='Polyp inference')
-parser.add_argument('--path', type=str, default='checkpoints/saved_model_submission-2.pth',
-                    help='model path')
-
-args = parser.parse_args()
 
 
 model = Resnet152Unet(n_classes=3)
